@@ -11,6 +11,7 @@ import 'package:super_editor/src/core/document_selection.dart';
 import 'package:super_editor/src/core/edit_context.dart';
 import 'package:super_editor/src/default_editor/common_editor_operations.dart';
 import 'package:super_editor/src/default_editor/document_gestures_touch_ios.dart';
+import 'package:super_editor/src/default_editor/document_key_handler.dart';
 import 'package:super_editor/src/default_editor/paragraph.dart';
 import 'package:super_editor/src/default_editor/selection_upstream_downstream.dart';
 import 'package:super_editor/src/default_editor/text.dart';
@@ -374,21 +375,11 @@ class _DocumentImeInteractorState extends State<DocumentImeInteractor> implement
     _inputConnection = null;
   }
 
-  KeyEventResult _onKeyPressed(FocusNode node, RawKeyEvent keyEvent) {
+  bool _onKeyPressed(KeyMessage keyMessage) {
+    final keyEvent = keyMessage.rawEvent;
     if (keyEvent is! RawKeyDownEvent) {
       editorKeyLog.finer("Received key event, but ignoring because it's not a down event: $keyEvent");
-      return KeyEventResult.handled;
-    }
-
-    // Try to execute an app shortcut for this key combo. If a shortcut
-    // runs, then return that result and skip editor handling. If no shortcut
-    // runs, then try to process this key in the editor.
-    final shortcuts = Shortcuts.maybeOf(node.context!);
-    if (shortcuts != null) {
-      final result = shortcuts.handleKeypress(node.context!, keyEvent);
-      if (result != KeyEventResult.ignored) {
-        return result;
-      }
+      return false;
     }
 
     editorKeyLog.info("Handling key press: $keyEvent");
@@ -404,10 +395,10 @@ class _DocumentImeInteractorState extends State<DocumentImeInteractor> implement
 
     switch (instruction) {
       case ExecutionInstruction.haltExecution:
-        return KeyEventResult.handled;
+        return true;
       case ExecutionInstruction.continueExecution:
       case ExecutionInstruction.blocked:
-        return KeyEventResult.ignored;
+        return false;
     }
   }
 
@@ -416,8 +407,11 @@ class _DocumentImeInteractorState extends State<DocumentImeInteractor> implement
     return Focus(
       focusNode: _focusNode,
       autofocus: widget.autofocus,
-      onKey: widget.hardwareKeyboardActions.isEmpty ? null : _onKeyPressed,
-      child: widget.child,
+      child: UnhandledKeyPresses(
+        focusNode: _focusNode,
+        keyHandler: _onKeyPressed,
+        child: widget.child,
+      ),
     );
   }
 }
