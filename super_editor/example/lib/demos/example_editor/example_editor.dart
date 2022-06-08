@@ -210,8 +210,8 @@ class _ExampleEditorState extends State<ExampleEditor> {
       case TargetPlatform.linux:
       case TargetPlatform.macOS:
       case TargetPlatform.windows:
-        return DocumentInputSource.ime;
-      // return DocumentInputSource.keyboard;
+        // return DocumentInputSource.ime;
+        return DocumentInputSource.keyboard;
     }
   }
 
